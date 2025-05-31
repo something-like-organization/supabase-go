@@ -48,7 +48,7 @@ Install the library to your go project:
 client, err := supabase.NewClient(url, key, nil)
 ```
 
-####
+#### Client with custom options
 
 ```go
 options := &supabase.ClientOptions{
