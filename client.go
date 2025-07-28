@@ -5,16 +5,16 @@ import (
 	"log"
 	"time"
 
+	"github.com/supabase-community/auth-go"
+	"github.com/supabase-community/auth-go/types"
 	"github.com/supabase-community/functions-go"
-	"github.com/supabase-community/gotrue-go"
-	"github.com/supabase-community/gotrue-go/types"
-	postgrest "github.com/supabase-community/postgrest-go"
+	"github.com/supabase-community/postgrest-go"
 	storage_go "github.com/supabase-community/storage-go"
 )
 
 const (
 	REST_URL      = "/rest/v1"
-	STORAGE_URL  = "/storage/v1"
+	STORAGE_URL   = "/storage/v1"
 	AUTH_URL      = "/auth/v1"
 	FUNCTIONS_URL = "/functions/v1"
 )
@@ -24,7 +24,7 @@ type Client struct {
 	rest    *postgrest.Client
 	Storage *storage_go.Client
 	// Auth is an interface. We don't need a pointer to an interface.
-	Auth      gotrue.Client
+	Auth      auth.Client
 	Functions *functions.Client
 	options   clientOptions
 }
@@ -74,9 +74,7 @@ func NewClient(url, key string, options *ClientOptions) (*Client, error) {
 
 	client.rest = postgrest.NewClient(url+REST_URL, schema, headers)
 	client.Storage = storage_go.NewClient(url+STORAGE_URL, key, headers)
-	// ugly to make auth client use custom URL
-	tmp := gotrue.New(url, key)
-	client.Auth = tmp.WithCustomGoTrueURL(url + AUTH_URL)
+	client.Auth = auth.New(url, key).WithCustomAuthURL(url + AUTH_URL)
 	client.Functions = functions.NewClient(url+FUNCTIONS_URL, key, headers)
 
 	return client, nil
@@ -95,22 +93,22 @@ func (c *Client) Rpc(name, count string, rpcBody interface{}) string {
 }
 
 func (c *Client) SignInWithEmailPassword(email, password string) (types.Session, error) {
-	token, err := c.Auth.SignInWithEmailPassword(email, password)
+	resp, err := c.Auth.SignInWithEmailPassword(email, password)
 	if err != nil {
 		return types.Session{}, err
 	}
-	c.UpdateAuthSession(token.Session)
+	c.UpdateAuthSession(resp.Session)
 
-	return token.Session, err
+	return resp.Session, err
 }
 
 func (c *Client) SignInWithPhonePassword(phone, password string) (types.Session, error) {
-	token, err := c.Auth.SignInWithPhonePassword(phone, password)
+	resp, err := c.Auth.SignInWithPhonePassword(phone, password)
 	if err != nil {
 		return types.Session{}, err
 	}
-	c.UpdateAuthSession(token.Session)
-	return token.Session, err
+	c.UpdateAuthSession(resp.Session)
+	return resp.Session, err
 }
 
 func (c *Client) EnableTokenAutoRefresh(session types.Session) {
@@ -148,12 +146,12 @@ func (c *Client) EnableTokenAutoRefresh(session types.Session) {
 }
 
 func (c *Client) RefreshToken(refreshToken string) (types.Session, error) {
-	token, err := c.Auth.RefreshToken(refreshToken)
+	resp, err := c.Auth.RefreshToken(refreshToken)
 	if err != nil {
 		return types.Session{}, err
 	}
-	c.UpdateAuthSession(token.Session)
-	return token.Session, err
+	c.UpdateAuthSession(resp.Session)
+	return resp.Session, err
 }
 
 func (c *Client) UpdateAuthSession(session types.Session) {

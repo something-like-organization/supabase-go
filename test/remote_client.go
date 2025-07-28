@@ -1,4 +1,4 @@
-// This is basic example for postgrest-go library usage.
+	// This is basic example for postgrest-go library usage.
 // For now this example is represent wanted syntax and bindings for library.
 // After core development this test files will be used for CI tests.
 
@@ -26,7 +26,7 @@ func main() {
 
 	client, err := supabase.NewClient(projectURL, anonKey, nil)
 	if err != nil {
-		fmt.Println("cannot initalize client", err)
+		fmt.Println("cannot initialize client", err)
 	}
 	client.SignInWithEmailPassword(email, password)
 
