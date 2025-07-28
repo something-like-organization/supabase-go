@@ -1,4 +1,4 @@
-	// This is basic example for postgrest-go library usage.
+// This is basic example for postgrest-go library usage.
 // For now this example is represent wanted syntax and bindings for library.
 // After core development this test files will be used for CI tests.
 
