@@ -167,24 +167,33 @@ func (c *Client) WithToken(token string) (*Client, error) {
 		return nil, errors.New("cannot copy non-initialized client")
 	}
 
-	clientCopy := &Client{}
-
+	clientCopy := &Client{
+		options: clientOptions{
+			url:     c.options.url,
+			headers: map[string]string{},
+			schema:  c.options.schema,
+		},
+	}
 	for key, value := range c.options.headers {
 		clientCopy.options.headers[key] = value
 	}
 	clientCopy.options.headers["Authorization"] = "Bearer " + token
+
 	clientCopy.rest = postgrest.NewClient(
 		clientCopy.options.url+REST_URL,
 		clientCopy.options.schema,
 		clientCopy.options.headers,
 	)
 	clientCopy.rest.SetAuthToken(token)
+
 	clientCopy.Auth = c.Auth.WithToken(token)
+
 	clientCopy.Storage = storage_go.NewClient(
 		clientCopy.options.url+STORAGE_URL,
 		token,
 		clientCopy.options.headers,
 	)
+
 	clientCopy.Functions = functions.NewClient(
 		clientCopy.options.url+FUNCTIONS_URL,
 		token,
