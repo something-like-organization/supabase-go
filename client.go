@@ -32,6 +32,7 @@ type Client struct {
 type clientOptions struct {
 	url     string
 	headers map[string]string
+	schema  string
 }
 
 type ClientOptions struct {
@@ -65,14 +66,13 @@ func NewClient(url, key string, options *ClientOptions) (*Client, error) {
 	// map is pass by reference, so this gets updated by rest of function
 	client.options.headers = headers
 
-	var schema string
 	if options != nil && options.Schema != "" {
-		schema = options.Schema
+		client.options.schema = options.Schema
 	} else {
-		schema = "public"
+		client.options.schema = "public"
 	}
 
-	client.rest = postgrest.NewClient(url+REST_URL, schema, headers)
+	client.rest = postgrest.NewClient(url+REST_URL, client.options.schema, headers)
 	client.Storage = storage_go.NewClient(url+STORAGE_URL, key, headers)
 	client.Auth = auth.New(url, key).WithCustomAuthURL(url + AUTH_URL)
 	client.Functions = functions.NewClient(url+FUNCTIONS_URL, key, headers)
@@ -160,5 +160,36 @@ func (c *Client) UpdateAuthSession(session types.Session) {
 	c.options.headers["Authorization"] = "Bearer " + session.AccessToken
 	c.Storage = storage_go.NewClient(c.options.url+STORAGE_URL, session.AccessToken, c.options.headers)
 	c.Functions = functions.NewClient(c.options.url+FUNCTIONS_URL, session.AccessToken, c.options.headers)
+}
 
+func (c *Client) WithToken(token string) (*Client, error) {
+	if c == nil {
+		return nil, errors.New("cannot copy non-initialized client")
+	}
+
+	clientCopy := &Client{}
+
+	for key, value := range c.options.headers {
+		clientCopy.options.headers[key] = value
+	}
+	clientCopy.options.headers["Authorization"] = "Bearer " + token
+	clientCopy.rest = postgrest.NewClient(
+		clientCopy.options.url+REST_URL,
+		clientCopy.options.schema,
+		clientCopy.options.headers,
+	)
+	clientCopy.rest.SetAuthToken(token)
+	clientCopy.Auth = c.Auth.WithToken(token)
+	clientCopy.Storage = storage_go.NewClient(
+		clientCopy.options.url+STORAGE_URL,
+		token,
+		clientCopy.options.headers,
+	)
+	clientCopy.Functions = functions.NewClient(
+		clientCopy.options.url+FUNCTIONS_URL,
+		token,
+		clientCopy.options.headers,
+	)
+
+	return clientCopy, nil
 }
